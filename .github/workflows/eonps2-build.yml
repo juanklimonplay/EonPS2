@@ -81,7 +81,7 @@ jobs:
           name: EonPS2-build
           path: |
             out/RIPTOPL-*.ELF
-            out/EONPS2-*.zip
+            out/*-bundle.zip
             out/APP_RIPTOPL.psu
             out/BUILD-MANIFEST.txt
           if-no-files-found: error

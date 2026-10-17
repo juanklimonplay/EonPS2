@@ -26,8 +26,9 @@ mejorarlo nosotros.
 2. Hacé clic en la ejecución más reciente que tenga el tilde verde ✅.
 3. Bajá hasta abajo, a la sección **Artifacts**, y descargá **`EonPS2-build`**.
 4. Es un `.zip` que adentro trae:
-   - `RIPTOPL-…-EONPS2-PS2DEVPINNED.ELF` → el programa principal, solo.
-   - `EONPS2-EONPS2-PS2DEVPINNED.zip` → el paquete completo para copiar al pendrive / SD:
+   - `RIPTOPL-v1.2.0-Beta-<número>-<commit>-EONPS2-PS2DEVPINNED.ELF` → el programa principal,
+     solo (el nombre dice de qué versión y de qué commit salió).
+   - `EONPS2-PS2DEVPINNED-bundle.zip` → el paquete completo para copiar al pendrive / SD:
      - `APPS/APP_RIPTOPL/RIPTOPL.ELF` (el programa, con su ícono)
      - `POPS/` (POPStarter, para juegos de PS1)
      - `EMBER/` (Ember, el otro emulador de PS1; **la BIOS de PS1 la tenés que poner vos**,
@@ -63,7 +64,7 @@ apk add bash make git zip unzip python3 py3-yaml gawk curl 7zip
 git config --global --add safe.directory /src
 sh .github/scripts/install_coherent_mmce.sh
 make clean && make LOCALVERSION=EONPS2-LOCAL release
-sh .github/scripts/eonps2_package.sh RIPTOPL-*-EONPS2-LOCAL.ELF LOCAL out
+sh .github/scripts/eonps2_package.sh RIPTOPL-*-EONPS2-LOCAL.ELF EONPS2-LOCAL out
 ```
 
 ### Opción B: Linux sin Docker (con el paquete ya armado de ps2dev)
@@ -89,13 +90,17 @@ en paralelo se pisa. Compilado de a uno tarda más o menos un minuto y medio.
 
 | Dónde | Herramientas | Detalle |
 | --- | --- | --- |
-| Robot de GitHub (oficial) | Imagen Docker `ghcr.io/ps2dev/ps2dev` fijada por *digest* `sha256:8fba50ec…1a11` | La misma que RiptOPL usa para su versión "PS2DEVPINNED" (fijada el 2026-08-13). Siempre compila igual. La versión exacta del compilador queda anotada en `BUILD-MANIFEST.txt`. |
+| Robot de GitHub (oficial) | Imagen Docker `ghcr.io/ps2dev/ps2dev` fijada por *digest* `sha256:8fba50ec…1a11` | La misma que RiptOPL usa para su versión "PS2DEVPINNED" (fijada el 2026-08-13). Siempre compila igual. Trae GCC 15.2.0 para EE e IOP (queda anotado en `BUILD-MANIFEST.txt`). |
 | Prueba en la nube (Etapa 1) | `ps2dev-ubuntu-latest.tar.gz` (armado el 2026-10-13, sha256 `b9cf90d0…4b79`) | GCC 15.2.0 para EE (`mips64r5900el-ps2-elf`) e IOP (`mipsel-none-elf`), binutils 2.45.1. |
 | Driver mmceman | ps2-mmce `db3e93f0` + parche del proyecto | Lo arma `install_coherent_mmce.sh`, igual que upstream. |
 | Neutrino incluido | `v1.8.0` | Fijado a propósito (RiptOPL baja "la última", que cambia sola). |
 
-Resultado de la prueba en la nube (commit `eab6c37`): `RIPTOPL.ELF` comprimido de
-**1.539.156 bytes** (sin comprimir, `opl.elf`, pesa unos 12,9 MB con símbolos).
+Resultados de la Etapa 1:
+
+- Robot de GitHub (imagen fijada): ELF de **1.538.772 bytes**; paquete completo de 6,8 MB.
+- Prueba en la nube (tarball, código de RiptOPL `eab6c37`): ELF de **1.539.156 bytes**.
+
+La pequeña diferencia es normal: el número de versión y el commit quedan grabados dentro del ELF.
 
 ---
 

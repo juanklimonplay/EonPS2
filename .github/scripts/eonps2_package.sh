@@ -7,7 +7,7 @@
 #
 #   sh .github/scripts/eonps2_package.sh <built.ELF> <flavour> <out-dir>
 #
-# Produces <out-dir>/EONPS2-<flavour>.zip containing:
+# Produces <out-dir>/<flavour>-bundle.zip (plus a copy of the ELF and the PSU) containing:
 #   APPS/APP_RIPTOPL/RIPTOPL.ELF (+ icons, title.cfg), ART/, APP_RIPTOPL.psu,
 #   POPS/ (POPStarter + BDMA pairs), EMBER/ (no BIOS), neutrino/ (pinned release),
 #   and the upstream PC-tool .url shortcuts.
@@ -72,9 +72,9 @@ cp -f neutrino/bsd-udpfsbd.toml "$PKG/neutrino/config/bsd-udpfsbd.toml"
 cp -f pc/PS2-Servers.url pc/OrbitPS2-Manager.url pc/OPL-PS1-AIO-Converter-GUI.url pc/PS2RD-CHT-Manager.url "$PKG/"
 cp -f pc/udpfs-server.url "$PKG/android-udpfs-server.url"
 
-cp -f "$ELF" "$OUT/RIPTOPL-${FLAVOUR}.ELF"
+cp -f "$ELF" "$OUT/$(basename "$ELF")"
 cp -f "$PKG/APP_RIPTOPL.psu" "$OUT/APP_RIPTOPL.psu"
-ZIP="EONPS2-${FLAVOUR}.zip"
+ZIP="${FLAVOUR}-bundle.zip"
 rm -f "$OUT/$ZIP"
 (
   cd "$PKG"
