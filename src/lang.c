@@ -166,10 +166,13 @@ int lngAddLanguages(char *path, const char *separator, int mode)
     guiUnlock();
 
     const char *temp;
-    if (configGetStr(configGetByType(CONFIG_OPL), "language_text", &temp)) {
-        if (lngSetGuiValue(lngFindGuiID(temp)))
-            moduleUpdateMenu(mode, 0, 1);
-    }
+    int langID = -1;
+    if (configGetStr(configGetByType(CONFIG_OPL), "language_text", &temp))
+        langID = lngFindGuiID(temp);
+    else if (mode != -1) // lngInit runs before thmInit; _loadConfig applies the default there
+        langID = lngFindDefaultGuiID();
+    if (langID >= 0 && lngSetGuiValue(langID))
+        moduleUpdateMenu(mode, 0, 1);
 
     return result;
 }
@@ -265,6 +268,14 @@ int lngFindGuiID(const char *lang)
         }
     }
     return 0;
+}
+
+// EonPS2: with no saved language_text (first boot; a save always writes it, English included), start
+// in Spanish once a lang_Spanish.lng has been found. -1 = not found, leave the language alone.
+int lngFindDefaultGuiID(void)
+{
+    int langID = lngFindGuiID("Spanish");
+    return langID > 0 ? langID : -1;
 }
 
 char **lngGetGuiList(void)

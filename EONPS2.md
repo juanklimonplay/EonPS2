@@ -34,6 +34,7 @@ mejorarlo nosotros.
      - `EMBER/` (Ember, el otro emulador de PS1; **la BIOS de PS1 la tenés que poner vos**,
        no se puede repartir)
      - `neutrino/` (Neutrino, el otro "motor" para juegos de PS2)
+     - `LNG/lang_Spanish.lng` (el menú en español, ver más abajo)
      - `ART/` y accesos directos a programas de PC
    - `APP_RIPTOPL.psu` → la misma app empaquetada para meter en una memory card con
      uLaunchELF/wLaunchELF.
@@ -46,6 +47,48 @@ desde la misma página con el botón **Run workflow**.
 
 Abrí PCSX2 y cargá el `.ELF` con *Sistema → Ejecutar ELF*. En la consola real se usa igual que
 cualquier OPL.
+
+---
+
+## Idioma: EonPS2 en español
+
+El paquete trae el archivo de idioma **`LNG/lang_Spanish.lng`**, con **todos** los textos del menú
+traducidos (los de OPL y también los que agrega RiptOPL: Neutrino, Ember, POPStarter, favoritos,
+Coverflow, VMC por juego, trucos, red, etc.).
+
+**Dónde va el archivo** (cualquiera de los dos sirve; OPL lo busca solo):
+
+- En el **pendrive o la SD del MX4SIO**: carpeta `LNG` en la raíz → `mass0:/LNG/lang_Spanish.lng`.
+  Es lo que ya trae el paquete: copiá la carpeta `LNG` tal cual al lado de `APPS`, `POPS`, etc.
+  (Si en *Prefijo BDM* pusiste una subcarpeta, la carpeta `LNG` va adentro de esa subcarpeta.)
+- En la **memory card**: carpeta `OPL` → `mc0:/OPL/lang_Spanish.lng` (o `mc1:`). Útil si querés el
+  menú en español aunque no haya pendrive enchufado. Pesa unos 45 KB.
+
+**Primer arranque en español:** si EonPS2 todavía no tiene configuración guardada (o la
+configuración no dice ningún idioma) y encuentra `lang_Spanish.lng`, arranca directamente en
+español. Si ya habías guardado otro idioma (por ejemplo una configuración vieja de OPL/RiptOPL con
+*English*), se respeta lo que guardaste: cambialo a mano como se explica abajo. Con el archivo solo en
+el pendrive, el menú pasa a español apenas se lee el USB (unos segundos después de arrancar); con
+el archivo en la memory card, está en español desde el principio.
+
+**Cómo cambiar el idioma a mano:**
+
+1. En el menú, apretá **START** para abrir el menú de opciones.
+2. Entrá a **Settings** (en español: **Configuración principal**). La misma opción también está en
+   **Display Settings** (**Pantalla**).
+3. En **Language** (**Idioma**) elegí **Spanish** con izquierda/derecha y confirmá con **OK**.
+4. Volvé al menú y elegí **Save Changes** (**Guardar cambios**) para que lo recuerde la próxima vez.
+
+Si en la lista solo aparece *English*, OPL no encontró el archivo: revisá que la carpeta se llame
+`LNG` (en mayúsculas) y el archivo `lang_Spanish.lng`, y que el pendrive esté conectado.
+
+No hace falta ninguna fuente (`font_Spanish.ttf`): la fuente que trae OPL adentro ya tiene la ñ,
+los acentos y los signos ¿ ¡.
+
+**De dónde salen las traducciones:** al compilar, el robot baja los idiomas oficiales de
+[Open-PS2-Loader-lang](https://github.com/ps2homebrew/Open-PS2-Loader-lang) y les suma
+`lng_fork/Spanish.yml`, que completa lo que falta. Si un texto queda mal o largo, se corrige en
+ese archivo (el texto original en inglés está en `lng_tmpl/_base.yml`).
 
 ---
 
@@ -117,6 +160,16 @@ La pequeña diferencia es normal: el número de versión y el commit quedan grab
 - Sin tocar: `flavours.yml` (las pruebas y compilaciones de RiptOPL; corren en cada *pull
   request*), `check-format.yml` y los de Korium.
 - **El código del programa no se tocó.**
+
+## Qué se cambió (español)
+
+- `lng_fork/Spanish.yml`: 327 textos nuevos traducidos (antes quedaban en inglés). Con eso el
+  español queda completo.
+- `.github/scripts/eonps2_package.sh`: el paquete incluye `LNG/lang_Spanish.lng` (y el robot
+  falla si no está). Va solo el español, a propósito: OPL muestra como máximo 15 idiomas y con
+  todos juntos el español podía quedar afuera.
+- `src/lang.c`, `src/opl.c`, `include/lang.h`: si no hay idioma guardado, arranca en español
+  (cuando encuentra `lang_Spanish.lng`). Con un idioma guardado no cambia nada.
 
 ---
 

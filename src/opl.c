@@ -3747,6 +3747,10 @@ static void _loadConfig()
                         (gNetworkProtocol == NET_PROTO_UDPFS || gNetworkProtocol == NET_PROTO_UDPFSBD ||
                          gNetworkProtocol == NET_PROTO_UDPBD));
 
+    // EonPS2 first boot: no saved language (no config file, or one without language_text) -> Spanish.
+    if (langID < 0 && (lscstatus & CONFIG_OPL) && !configGetStr(configGetByType(CONFIG_OPL), CONFIG_OPL_LANGUAGE, &temp))
+        langID = lngFindDefaultGuiID();
+
     applyConfig(themeID, langID, 0);
 
     lscret = result;
