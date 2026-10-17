@@ -10,7 +10,7 @@
 # Produces <out-dir>/<flavour>-bundle.zip (plus a copy of the ELF and the PSU) containing:
 #   APPS/APP_RIPTOPL/RIPTOPL.ELF (+ icons, title.cfg), ART/, APP_RIPTOPL.psu,
 #   POPS/ (POPStarter + BDMA pairs), EMBER/ (no BIOS), neutrino/ (pinned release),
-#   and the upstream PC-tool .url shortcuts.
+#   LNG/lang_Spanish.lng, and the upstream PC-tool .url shortcuts.
 #
 # NEUTRINO_TAG pins the bundled Neutrino release (upstream RiptOPL uses the newest pre-release,
 # which moves; a pin keeps two builds of the same commit identical).
@@ -68,6 +68,13 @@ test -s "$PKG/neutrino/neutrino.elf"
 mkdir -p "$PKG/neutrino/config"
 cp -f neutrino/bsd-udpfsbd.toml "$PKG/neutrino/config/bsd-udpfsbd.toml"
 
+# Spanish UI: OPL lists <device>:/LNG/lang_*.lng (bdmsupport.c, mmcesupport.c) and mc?:OPL/lang_*.lng.
+# Only Spanish ships: the selector holds at most MAX_LANGUAGE_FILES (15) files, so a full set could
+# push Spanish out. The built-in font already covers every Spanish character, so no font_Spanish.ttf.
+test -s lng/lang_Spanish.lng
+mkdir -p "$PKG/LNG"
+cp -f lng/lang_Spanish.lng "$PKG/LNG/lang_Spanish.lng"
+
 # PC companion-tool shortcuts (links only, no binaries); the package verifier expects them.
 cp -f pc/PS2-Servers.url pc/OrbitPS2-Manager.url pc/OPL-PS1-AIO-Converter-GUI.url pc/PS2RD-CHT-Manager.url "$PKG/"
 cp -f pc/udpfs-server.url "$PKG/android-udpfs-server.url"
@@ -78,12 +85,13 @@ ZIP="${FLAVOUR}-bundle.zip"
 rm -f "$OUT/$ZIP"
 (
   cd "$PKG"
-  zip -r -X "../$ZIP" APPS ART APP_RIPTOPL.psu POPS EMBER neutrino \
+  zip -r -X "../$ZIP" APPS ART APP_RIPTOPL.psu POPS EMBER neutrino LNG \
     PS2-Servers.url android-udpfs-server.url OrbitPS2-Manager.url \
     OPL-PS1-AIO-Converter-GUI.url PS2RD-CHT-Manager.url >/dev/null
 )
 python3 .github/scripts/package_release_app.py verify \
   --zip "$OUT/$ZIP" --source-elf "$ELF" \
   --app-name APP_RIPTOPL --elf-name RIPTOPL.ELF
+unzip -l "$OUT/$ZIP" | grep -q ' LNG/lang_Spanish.lng$'
 rm -rf "$PKG"
 echo "Built $OUT/$ZIP (Neutrino $NEUTRINO_TAG)"

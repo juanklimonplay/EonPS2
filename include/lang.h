@@ -27,6 +27,7 @@ void lngEnd(void);
 int lngSetGuiValue(int langID);
 int lngGetGuiValue(void);
 int lngFindGuiID(const char *lang);
+int lngFindDefaultGuiID(void);
 char **lngGetGuiList(void);
 char *lngGetFilePath(int langID);
 
