@@ -12,10 +12,15 @@ name: Korium Sync
 # A push made with the workflow's GITHUB_TOKEN starts no other workflow, so after a clean push this
 # dispatches Rolling Release on the Korium branch itself (workflow_dispatch is the documented exception).
 
+# EonPS2 fork: this upstream publishing/sync workflow is DISABLED here (manual run only).
+# Its automatic triggers were removed so the fork never publishes releases, uploads to MEGA,
+# pushes gh-pages/branches or dispatches other workflows. See EONPS2.md. Original triggers:
+#   on:
+#     push:
+#       branches:
+#         - rebuild/main
+#     workflow_dispatch:
 on:
-  push:
-    branches:
-      - rebuild/main
   workflow_dispatch:
 
 permissions:

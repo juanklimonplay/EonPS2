@@ -1,9 +1,13 @@
 name: ORBIT Neutrino RA Watch
 
+# EonPS2 fork: this upstream publishing/sync workflow is DISABLED here (manual run only).
+# Its automatic triggers were removed so the fork never publishes releases, uploads to MEGA,
+# pushes gh-pages/branches or dispatches other workflows. See EONPS2.md. Original triggers:
+#   on:
+#     schedule:
+#       - cron: "41 5 1,11,21 * *"
+#     workflow_dispatch:
 on:
-  schedule:
-    # Same schedule as neutrino-watch.yml. New runtimes need compatibility review.
-    - cron: "41 5 1,11,21 * *"
   workflow_dispatch:
 
 permissions:

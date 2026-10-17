@@ -13,10 +13,14 @@ name: Ember Watch
 # push made with GITHUB_TOKEN starts no workflow on its own). Anything unexpected stops it without
 # touching the repo.
 
+# EonPS2 fork: this upstream publishing/sync workflow is DISABLED here (manual run only).
+# Its automatic triggers were removed so the fork never publishes releases, uploads to MEGA,
+# pushes gh-pages/branches or dispatches other workflows. See EONPS2.md. Original triggers:
+#   on:
+#     schedule:
+#       - cron: "23 18 * * 1"
+#     workflow_dispatch:
 on:
-  schedule:
-    # Mondays at 18:23 UTC (GitHub Actions scheduled times are UTC).
-    - cron: "23 18 * * 1"
   workflow_dispatch:
 
 permissions:

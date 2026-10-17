@@ -1,11 +1,14 @@
 name: Enforce Rolling as Latest
 
+# EonPS2 fork: this upstream publishing/sync workflow is DISABLED here (manual run only).
+# Its automatic triggers were removed so the fork never publishes releases, uploads to MEGA,
+# pushes gh-pages/branches or dispatches other workflows. See EONPS2.md. Original triggers:
+#   on:
+#     push:
+#       branches:
+#         - rebuild/main
+#     workflow_dispatch:
 on:
-  push:
-    branches:
-      # rebuild/main is the publishing branch. master is old lineage and must never
-      # drive the rolling channel, so it is deliberately NOT a trigger here.
-      - rebuild/main
   workflow_dispatch:
 
 permissions:
