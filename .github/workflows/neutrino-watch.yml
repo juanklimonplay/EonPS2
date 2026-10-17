@@ -16,14 +16,14 @@ name: Neutrino Watch
 # release notes' "Included build:" line that rolling-release.yml writes). workflow_dispatch via the
 # GITHUB_TOKEN DOES start a new run (it's the documented exception to the no-recursion rule).
 
+# EonPS2 fork: this upstream publishing/sync workflow is DISABLED here (manual run only).
+# Its automatic triggers were removed so the fork never publishes releases, uploads to MEGA,
+# pushes gh-pages/branches or dispatches other workflows. See EONPS2.md. Original triggers:
+#   on:
+#     schedule:
+#       - cron: "41 5 1,11,21 * *"
+#     workflow_dispatch:
 on:
-  schedule:
-    # ~Every 10 days. cron has no "every N days" operator that spans month boundaries, so pin the
-    # days explicitly: the 1st, 11th and 21st (gaps of 10, 10, then 8-11 into the next month).
-    # Deliberately NOT "*/10" for day-of-month -- that also fires on the 31st, one day after the
-    # 21st+10 tick, i.e. two runs back to back in the 7 long months.
-    # Off-hour + offset minute to dodge the top-of-hour cron backlog.
-    - cron: "41 5 1,11,21 * *"
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,88 @@
+name: EonPS2 build
+
+# EonPS2 stage 1: build the main loader ELF on every push to any branch of this fork and keep it,
+# plus an installable bundle, as a downloadable Actions artifact. Nothing is published anywhere.
+#
+# Toolchain: the PS2DEVPINNED image from flavours.yml (ps2dev pinned by digest on 2026-08-13), so
+# two runs of the same commit use the same compiler. Bump it on purpose, never casually.
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eonps2-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/ps2dev/ps2dev@sha256:8fba50ecc2229acd7f8da63d34302f12939b7d4fa6848dda1e6a0ce083321a11
+    env:
+      FLAVOUR: EONPS2-PS2DEVPINNED
+      NEUTRINO_TAG: v1.8.0
+    steps:
+      # git must exist before checkout, or the version string collapses to "-dirty".
+      - name: Install host dependencies
+        run: |
+          apk add --no-cache bash make git zip unzip tar gzip xz curl python3 py3-yaml gmp mpfr4 mpc1 gawk coreutils findutils grep sed diffutils
+          apk add --no-cache 7zip || apk add --no-cache p7zip
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Mark workspace safe and fetch history
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --prune --unshallow || true
+
+      - name: Install menu-coherent mmceman (#254)
+        run: sh .github/scripts/install_coherent_mmce.sh
+
+      - name: Build (make clean release)
+        run: make clean && make LOCALVERSION=${FLAVOUR} release
+
+      - name: Package bundle
+        run: |
+          set -eu
+          ELF="$(ls RIPTOPL-*-${FLAVOUR}.ELF | head -n1)"
+          echo "Built $ELF ($(stat -c %s "$ELF") bytes)"
+          sh .github/scripts/eonps2_package.sh "$ELF" "$FLAVOUR" out
+
+      - name: Record build manifest
+        if: ${{ always() }}
+        run: |
+          {
+            echo "flavour:      ${FLAVOUR}"
+            echo "image:        ghcr.io/ps2dev/ps2dev@sha256:8fba50ecc2229acd7f8da63d34302f12939b7d4fa6848dda1e6a0ce083321a11 (pinned 2026-08-13)"
+            echo "neutrino:     ${NEUTRINO_TAG}"
+            echo "built (UTC):  $(date -u '+%Y-%m-%d %H:%M:%S')"
+            echo "run:          ${{ github.run_id }}"
+            echo "ref:          ${{ github.ref }}"
+            echo "commit:       ${{ github.sha }}"
+            echo "---- toolchain ----"
+            mips64r5900el-ps2-elf-gcc --version | head -1
+            mipsel-none-elf-gcc --version | head -1
+            echo "---- outputs ----"
+            ls -l out/ 2>/dev/null
+          } > BUILD-MANIFEST.txt 2>&1 || true
+          mkdir -p out && cp -f BUILD-MANIFEST.txt out/
+          cat BUILD-MANIFEST.txt
+
+      - name: Upload ELF and bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: EonPS2-build
+          path: |
+            out/RIPTOPL-*.ELF
+            out/EONPS2-*.zip
+            out/APP_RIPTOPL.psu
+            out/BUILD-MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 30

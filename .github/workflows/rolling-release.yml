@@ -44,19 +44,18 @@ name: Rolling Release
 # can yield a green-but-non-booting binary (issue #102), which is why the pinned PS2DEVPINNED flavour
 # is kept as the safe fallback -- see the release notes "Download" section.
 
+# EonPS2 fork: this upstream publishing/sync workflow is DISABLED here (manual run only).
+# Its automatic triggers were removed so the fork never publishes releases, uploads to MEGA,
+# pushes gh-pages/branches or dispatches other workflows. See EONPS2.md. Original triggers:
+#   on:
+#     push:
+#       branches:
+#         - rebuild/main
+#         - test/korium-audit-remediation
+#       tags:
+#         - 'v*'
+#     workflow_dispatch:
 on:
-  push:
-    branches:
-      # rebuild/main is THE publishing branch. master is the old lineage: it is kept
-      # around for history, and a push to it must never republish the rolling channel with
-      # pre-rebuild code. Deliberately not a trigger.
-      - rebuild/main
-      # The Korium test line (PR #687): the same build with the Korium built-in theme, published to its
-      # own "rolling-korium" release. korium-sync.yml keeps it merged with rebuild/main and dispatches
-      # this workflow on it (a push made by a workflow's GITHUB_TOKEN starts no workflow by itself).
-      - test/korium-audit-remediation
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 permissions:
