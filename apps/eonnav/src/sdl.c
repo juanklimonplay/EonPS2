@@ -348,6 +348,90 @@ static void pad_button(int b, int down)
 	}
 }
 
+#ifdef __PS2__
+#include <libpad.h>
+
+/* SDL's PS2 joystick driver never switches a DualShock 2 to analog mode, and in
+ * digital mode it still reports whatever stale bytes padRead() returns as stick
+ * positions (seen under PCSX2: the pointer would not move, and the arrow keys
+ * misbehaved). So: ask each pad for DualShock mode, as games do, and ignore the
+ * sticks while no pad is in analog mode. The d-pad works in either mode. */
+static int pad_analog;
+static unsigned char pad_mode_asked[2];
+
+static void ps2_pad_modes(void)
+{
+	int port, analog = 0;
+	for (port = 0; port < 2; port++) {
+		int state = padGetState(port, 0);
+		if (state != PAD_STATE_STABLE && state != PAD_STATE_FINDCTP1) {
+			pad_mode_asked[port] = 0;
+			continue;
+		}
+		if (padInfoMode(port, 0, PAD_MODECURID, 0) == PAD_TYPE_DUALSHOCK) {
+			analog = 1;
+			continue;
+		}
+		if (!pad_mode_asked[port] && padInfoMode(port, 0, PAD_MODETABLE, -1) > 1) {
+			padSetMainMode(port, 0, PAD_MMODE_DUALSHOCK, PAD_MMODE_LOCK);
+			pad_mode_asked[port] = 1;
+		}
+	}
+	if (!analog && pad_analog)
+		stick_x = stick_y = stick_rx = stick_ry = 0;
+	pad_analog = analog;
+}
+#define sticks_valid()	pad_analog
+#else
+#define ps2_pad_modes()	do { } while (0)
+#define sticks_valid()	1
+#endif
+
+/* Test hook: EONNAV_INPUT="down,down,x,sr" presses gamepad buttons (one token every
+ * 400 ms, after EONNAV_INPUT_MS) so the pad mapping can be checked headless.
+ * sr/sl/sd/su push the left stick right/left/down/up for half a second. */
+static char *input_script;
+static uttime input_next;
+static int input_hold;
+
+static int stick(int v);
+
+static void run_input_script(void)
+{
+	static const struct { const char *name; int button; } names[] = {
+		{ "down", SDL_CONTROLLER_BUTTON_DPAD_DOWN }, { "up", SDL_CONTROLLER_BUTTON_DPAD_UP },
+		{ "left", SDL_CONTROLLER_BUTTON_DPAD_LEFT }, { "right", SDL_CONTROLLER_BUTTON_DPAD_RIGHT },
+		{ "x", SDL_CONTROLLER_BUTTON_A }, { "o", SDL_CONTROLLER_BUTTON_B },
+		{ "sq", SDL_CONTROLLER_BUTTON_X }, { "tri", SDL_CONTROLLER_BUTTON_Y },
+		{ "start", SDL_CONTROLLER_BUTTON_START }, { "l1", SDL_CONTROLLER_BUTTON_LEFTSHOULDER },
+		{ "r1", SDL_CONTROLLER_BUTTON_RIGHTSHOULDER },
+	};
+	char tok[16];
+	size_t n, i;
+
+	if (input_hold && !--input_hold)
+		stick_x = stick_y = 0;
+	if (!input_script || !*input_script || get_time() < input_next)
+		return;
+	input_next = get_time() + 400;
+	n = strcspn(input_script, ",");
+	if (n >= sizeof tok) n = sizeof tok - 1;
+	memcpy(tok, input_script, n);
+	tok[n] = 0;
+	input_script += n + (input_script[n] == ',');
+	if (tok[0] == 's' && tok[1] && !tok[2] && strchr("rlud", tok[1])) {
+		stick_x = tok[1] == 'r' ? 32767 : tok[1] == 'l' ? -32767 : 0;
+		stick_y = tok[1] == 'd' ? 32767 : tok[1] == 'u' ? -32767 : 0;
+		input_hold = 500 / POLL_MS;
+		return;
+	}
+	for (i = 0; i < sizeof names / sizeof names[0]; i++)
+		if (!strcmp(tok, names[i].name)) {
+			pad_button(names[i].button, 1);
+			pad_button(names[i].button, 0);
+		}
+}
+
 static int stick(int v)
 {
 	if (v > -STICK_DEAD && v < STICK_DEAD)
@@ -360,6 +444,7 @@ static void sdl_poll(void *p)
 	SDL_Event ev;
 
 	sdl_timer = install_timer(POLL_MS, sdl_poll, NULL);
+	ps2_pad_modes();
 	while (SDL_PollEvent(&ev)) {
 		switch (ev.type) {
 			case SDL_QUIT:
@@ -374,6 +459,8 @@ static void sdl_poll(void *p)
 				pad_button(ev.cbutton.button, ev.type == SDL_CONTROLLERBUTTONDOWN);
 				break;
 			case SDL_CONTROLLERAXISMOTION:
+				if (!sticks_valid())
+					break;
 				switch (ev.caxis.axis) {
 					case SDL_CONTROLLER_AXIS_LEFTX: stick_x = stick(ev.caxis.value); break;
 					case SDL_CONTROLLER_AXIS_LEFTY: stick_y = stick(ev.caxis.value); break;
@@ -419,6 +506,7 @@ static void sdl_poll(void *p)
 			}
 		}
 	}
+	run_input_script();
 	if (stick_x || stick_y)
 		move_pointer(mouse_x + stick_x * STICK_SPEED / 32768, mouse_y + stick_y * STICK_SPEED / 32768);
 	if (stick_ry) {
@@ -475,6 +563,8 @@ static unsigned char *sdl_init_driver(unsigned char *param, unsigned char *ignor
 		shot_file = s;
 		shot_at = get_time() + ((s = getenv("EONNAV_SHOT_MS")) ? atoi(s) : 3000);
 	}
+	if ((input_script = getenv("EONNAV_INPUT")))
+		input_next = get_time() + ((s = getenv("EONNAV_INPUT_MS")) ? atoi(s) : 1500);
 	sdl_timer = install_timer(POLL_MS, sdl_poll, NULL);
 	return NULL;
 

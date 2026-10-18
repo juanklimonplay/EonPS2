@@ -42,6 +42,11 @@ echo "$R" | grep -q "Invalid certificate" && check ok "self-signed certificate i
 if R="$("$BIN/eonnav-host" -ssl.builtin-certificates 1 -ssl.certificates 0 -dump https://localhost:18443/pagina.html 2>&1)"; then RC=0; else RC=$?; fi
 { [ "$RC" = 0 ] && echo "$R" | grep -q "Prueba de EonNav" && ! echo "$R" | grep -q "Unknown error"; } \
   && check ok "HTTPS page with TCP close loads cleanly" || check bad "HTTPS page with TCP close loads cleanly (rc=$RC)"
+# Links reports "error initializing built-in certificates: ..., failed N/126" if any root is
+# rejected (the PS2 SDK's wolfSSL rejected 10 roots with serial number 0 under PCSX2).
+echo "$R" | grep -q "built-in certificates" \
+  && check bad "all built-in root certificates load: $(echo "$R" | grep "built-in certificates")" \
+  || check ok "all built-in root certificates load"
 
 SDL_VIDEODRIVER=offscreen EONNAV_SHOT="$OUT/pagina.ppm" EONNAV_SHOT_MS=3000 \
   timeout 60 "$BIN/eonnav-glue" -g -driver sdl -language Spanish http://127.0.0.1:18765/pagina.html || true

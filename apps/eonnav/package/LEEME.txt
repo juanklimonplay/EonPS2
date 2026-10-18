@@ -31,14 +31,20 @@ Controles
   L1 / R1 ............. pagina anterior / siguiente
   START ............... aceptar (Enter)
 
+Si el puntero no se mueve: EonNav pone el mando en modo analogico solo, pero si
+igual no anda, apreta el boton ANALOG del mando (se prende la luz roja).
+
 Estado
 ------
-Prototipo: compilado y probado en PC (misma version del programa, sin consola).
-Falta probarlo en PCSX2 y en una PS2 real. Si algo falla, anota que estabas
-haciendo y que aparecio en pantalla.
+Prototipo. Primera prueba en PCSX2 (18/10/2026): arranca, muestra la pagina de
+inicio y conecta a la red. Fallaban HTTPS (certificados) y la palanca; las dos
+cosas estan corregidas en esta version, pero falta volver a probarlas en PCSX2.
+Todavia no se probo en una PS2 real. Si algo falla, anota que estabas haciendo
+y que aparecio en pantalla.
 
 Licencia
 --------
 EonNav esta basado en Links (c) Mikulas Patocka y colaboradores, licencia GPL
-version 2 o posterior (ver COPYING). El codigo fuente de EonNav esta en
+version 2 o posterior (ver COPYING), y usa wolfSSL (GPL version 3 o posterior),
+asi que EONNAV.ELF se distribuye bajo GPL version 3. El codigo fuente de EonNav esta en
 https://github.com/juanklimonplay/EonPS2 (carpeta apps/eonnav).

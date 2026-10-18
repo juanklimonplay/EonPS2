@@ -2,15 +2,15 @@
 # Build EonNav: the Links 2 browser with an SDL2 graphics driver (src/sdl.c).
 #
 #   sh apps/eonnav/build.sh ps2    -> apps/eonnav/out/EONNAV.ELF   (needs PS2DEV/PS2SDK)
-#   sh apps/eonnav/build.sh host   -> apps/eonnav/out/eonnav-host  (needs libsdl2-dev, libpng-dev, libwolfssl-dev)
+#   sh apps/eonnav/build.sh host   -> apps/eonnav/out/eonnav-host  (needs libsdl2-dev, libpng-dev)
 #   sh apps/eonnav/build.sh glue   -> apps/eonnav/out/eonnav-glue  (host build that uses the PS2 pipe/select glue)
 #
 # The host build is the same browser on Linux. With SDL_VIDEODRIVER=offscreen and
 # EONNAV_SHOT=file.ppm it renders a page headless and saves a screenshot, so pages can be
 # checked without a console or an emulator.
 #
-# HTTPS comes from wolfSSL's OpenSSL compatibility layer (the PS2 SDK ships wolfSSL with
-# TLS 1.3). Links finds it through a generated "openssl" pkg-config file, and
+# HTTPS comes from wolfSSL's OpenSSL compatibility layer (TLS 1.3; wolfSSL is built here,
+# see below). Links finds it through a generated "openssl" pkg-config file, and
 # src/wolfssl_pre.h is force-included so wolfSSL's headers are read before Links' own.
 set -eu
 
@@ -64,18 +64,61 @@ if [ "$TARGET" = ps2 ]; then
   sed -i 's/^links_OBJECTS = /links_OBJECTS = ps2main.o /' "$SRC/Makefile.in"
 fi
 
-# wolfSSL presented to configure as "openssl".
+# wolfSSL: built here from a pinned release, for every target, instead of using the PS2 SDK's
+# prebuilt copy, which (found under PCSX2, 2026-10-18):
+#  - rejects root certificates whose serial number is 0 (strict ASN.1 check added in
+#    wolfSSL 5.7). 10 of Links' 126 built-in roots have one, among them GoDaddy G2 and the
+#    Starfield roots, so sites signed by them could not be verified;
+#  - gets its 64-bit type wrong in the headers apps compile against: the PS2 compiler
+#    defines __mips64, so wolfSSL assumes an 8-byte long, but the PS2 ABI (n32) has a 4-byte
+#    long, which made word64 4 bytes wide (SHA-384/512, TLS 1.3 tickets).
+# wolfssl/options.h is the PS2 SDK's own option set, unchanged, so behaviour stays the same
+# apart from WOLFSSL_ASN_ALLOW_0_SERIAL and the explicit type sizes. The host builds use the
+# same source and options, so the host tests exercise the code that ships on the PS2.
+WOLF_TAG=v5.8.2-stable
+WOLF_COMMIT=decea12e223869c8f8f3ab5a53dc90b69f436eb2
+WOLF_SRC="$HERE/build/wolfssl-$WOLF_TAG"
+if [ ! -d "$WOLF_SRC/.git" ]; then
+  git clone --quiet --depth 1 -b "$WOLF_TAG" https://github.com/wolfSSL/wolfssl.git "$WOLF_SRC"
+fi
+test "$(git -C "$WOLF_SRC" rev-parse HEAD)" = "$WOLF_COMMIT"
+cp "$HERE/wolfssl/options.h" "$WOLF_SRC/wolfssl/options.h"
+WOLF_LIB="$WORK/wolfssl"
+mkdir -p "$WOLF_LIB/obj"
+if [ "$TARGET" = ps2 ]; then
+  # Type sizes go to both the library and Links, because they change structure layouts.
+  WOLF_ABI="-DSIZEOF_LONG=4 -DSIZEOF_LONG_LONG=8"
+  WCC=mips64r5900el-ps2-elf-gcc
+  WAR=mips64r5900el-ps2-elf-ar
+  WCFLAGS="-O2 -G0 -D_EE -DPS2 -D__PS2__ -I$PS2SDK/ee/include -I$PS2SDK/common/include -include $HERE/wolfssl/ps2_compat.h"
+  $WCC $WCFLAGS -c "$HERE/wolfssl/ps2_compat.c" -o "$WOLF_LIB/obj/ps2_compat.o"
+else
+  WOLF_ABI=""
+  WCC=cc
+  WAR=ar
+  WCFLAGS="-O2 -D_GNU_SOURCE -include stdint.h -include netdb.h"
+fi
+for f in "$WOLF_SRC"/src/*.c "$WOLF_SRC"/wolfcrypt/src/*.c; do
+  o="$WOLF_LIB/obj/$(basename "$(dirname "$f")")_$(basename "$f" .c).o"
+  $WCC -c $WCFLAGS $WOLF_ABI -I"$WOLF_SRC" -include "$WOLF_SRC/wolfssl/options.h" \
+    -DWOLFSSL_IGNORE_FILE_WARN -DWOLFSSL_ASN_ALLOW_0_SERIAL "$f" -o "$o" 2>> "$WORK/wolfssl.log" \
+    || { grep -E 'error' "$WORK/wolfssl.log" | head -20; exit 1; }
+done
+rm -f "$WOLF_LIB/libeonwolfssl.a"
+$WAR rcs "$WOLF_LIB/libeonwolfssl.a" "$WOLF_LIB"/obj/*.o
+
+# wolfSSL presented to configure as "openssl". The forced include is also seen by
+# configure's preprocessor-only probes, which get no CFLAGS, so the PS2 entry carries every
+# include path wolfssl_pre.h needs. The library is named libeonwolfssl so the linker can
+# never pick the PS2 SDK's libwolfssl from the ports directory instead.
 PCDIR="$WORK/pkgconfig"
 mkdir -p "$PCDIR"
-# The forced include is also seen by configure's preprocessor-only probes, which get no
-# CFLAGS, so the PS2 entry carries every include path wolfssl_pre.h needs.
+WOLF_INC="-I$WOLF_SRC -I$WOLF_SRC/wolfssl $WOLF_ABI"
 if [ "$TARGET" = ps2 ]; then
-  WOLF_INC="$PS2SDK/ee/include -D_EE -I$PS2SDK/common/include -I$PS2SDK/ports/include -I$PS2SDK/ports/include/wolfssl"
-else
-  WOLF_INC=/usr/include/wolfssl
+  WOLF_INC="$WOLF_INC -D_EE -I$PS2SDK/ee/include -I$PS2SDK/common/include -I$PS2SDK/ports/include"
 fi
-printf 'Name: openssl\nDescription: wolfSSL OpenSSL compatibility layer\nVersion: 3.0.0\nCflags: -I%s -include %s\nLibs: -lwolfssl\n' \
-  "$WOLF_INC" "$HERE/src/wolfssl_pre.h" > "$PCDIR/openssl.pc"
+printf 'Name: openssl\nDescription: wolfSSL OpenSSL compatibility layer\nVersion: 3.0.0\nCflags: %s -include %s\nLibs: -L%s -leonwolfssl\n' \
+  "$WOLF_INC" "$HERE/src/wolfssl_pre.h" "$WOLF_LIB" > "$PCDIR/openssl.pc"
 
 COMMON_CONF="--with-ssl --enable-graphics --without-x --without-fb --without-directfb --without-svgalib \
   --without-pmshell --without-atheos --without-gpm --without-freetype --without-bzip2 \
@@ -132,6 +175,7 @@ case "$TARGET" in
     printf 'title=EonNav (navegador)\nboot=EONNAV.ELF\n' > "$PKG/APPS/EONNAV/title.cfg"
     cp "$HERE/package/LEEME.txt" "$PKG/APPS/EONNAV/LEEME.txt"
     cp COPYING "$PKG/APPS/EONNAV/COPYING"
+    cp "$WOLF_SRC/COPYING" "$PKG/APPS/EONNAV/COPYING.wolfssl"
     rm -f "$OUT/EONNAV-bundle.zip"
     (cd "$PKG" && zip -r -X "$OUT/EONNAV-bundle.zip" APPS >/dev/null)
     ;;

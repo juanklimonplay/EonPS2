@@ -26,7 +26,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install host libraries
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libsdl2-dev libpng-dev libwolfssl-dev
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libsdl2-dev libpng-dev
       - name: Build host and glue variants
         run: |
           sh apps/eonnav/build.sh host
