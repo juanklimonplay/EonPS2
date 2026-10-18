@@ -102,3 +102,9 @@ __pycache__/
 # IOP compiler intermediate directories
 /modules/network/rapops/obj/
 /modules/network/rapull/obj/
+
+#
+# EonNav (apps/eonnav): downloaded Links source, build trees and outputs
+#
+apps/eonnav/build/
+apps/eonnav/out/

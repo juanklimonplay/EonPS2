@@ -193,7 +193,12 @@ EonPS2/OPL, Neutrino, POPStarter (PS1) o las herramientas de wLaunchELF.
 - MX4SIO como dispositivo por defecto,
 - que recuerde los últimos trucos (cheats) usados por juego.
 
-Las funciones de red quedan para el final, porque las consolas no tienen adaptador de red.
+**e) Red (las PS2 slim traen la entrada de red de fábrica):**
+- **EonNav, navegador web** — prototipo hecho (ver [`apps/eonnav/README.md`](apps/eonnav/README.md)):
+  el navegador Links adaptado a la PS2, con HTTPS moderno, joystick y páginas en castellano.
+  Falta probarlo en PCSX2 y en la consola.
+- Jugar desde la PC por red (SMB / UDPBD, ya vienen en RiptOPL): falta una guía en castellano.
+- Asistente IA conectándose directo desde la PS2, usando la misma conexión HTTPS de EonNav.
 
 ---
 

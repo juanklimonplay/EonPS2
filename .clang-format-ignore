@@ -9,3 +9,4 @@
 ./modules/usb/usbd-ra
 ./modules/bdmassault
 ./third_party/mbedtls
+./apps/eonnav

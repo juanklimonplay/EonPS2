@@ -1,0 +1,76 @@
+name: EonNav build
+
+# EonNav (apps/eonnav): the Links browser for the PS2. Builds the PS2 ELF and a ready-to-copy
+# kit, and runs the host smoke tests (same browser on Linux, headless). Nothing is published.
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'apps/eonnav/**'
+      - '.github/workflows/eonnav-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eonnav-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Install host libraries
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libsdl2-dev libpng-dev libwolfssl-dev
+      - name: Build host and glue variants
+        run: |
+          sh apps/eonnav/build.sh host
+          sh apps/eonnav/build.sh glue
+      - name: Run host smoke tests
+        run: sh apps/eonnav/tests/run_host_tests.sh apps/eonnav/out/tests
+      - name: Upload screenshot
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: EonNav-host-screenshot
+          path: apps/eonnav/out/tests/pagina.png
+          if-no-files-found: warn
+          retention-days: 14
+
+  ps2:
+    runs-on: ubuntu-24.04
+    # Same pinned ps2dev image as eonps2-build.yml (2026-08-13).
+    container: ghcr.io/ps2dev/ps2dev@sha256:8fba50ecc2229acd7f8da63d34302f12939b7d4fa6848dda1e6a0ce083321a11
+    steps:
+      - name: Install host dependencies
+        run: apk add --no-cache bash make git zip curl tar bzip2 coreutils grep sed gawk pkgconf
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build EONNAV.ELF and kit
+        run: sh apps/eonnav/build.sh ps2
+      - name: Record build manifest
+        run: |
+          {
+            echo "image:   ghcr.io/ps2dev/ps2dev@sha256:8fba50ecc2229acd7f8da63d34302f12939b7d4fa6848dda1e6a0ce083321a11"
+            echo "commit:  ${{ github.sha }}"
+            echo "built:   $(date -u '+%Y-%m-%d %H:%M:%S') UTC"
+            mips64r5900el-ps2-elf-gcc --version | head -1
+            ls -l apps/eonnav/out/
+          } > apps/eonnav/out/BUILD-MANIFEST.txt
+          cat apps/eonnav/out/BUILD-MANIFEST.txt
+      - name: Upload EonNav
+        uses: actions/upload-artifact@v6
+        with:
+          name: EonNav-build
+          path: |
+            apps/eonnav/out/EONNAV.ELF
+            apps/eonnav/out/EONNAV-bundle.zip
+            apps/eonnav/out/BUILD-MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 30

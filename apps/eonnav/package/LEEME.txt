@@ -1,0 +1,44 @@
+EonNav - navegador web para PS2 (prototipo)
+============================================
+
+Que es
+------
+EonNav es el navegador Links 2.29 adaptado a la PlayStation 2: pantalla, joystick,
+red de la PS2 slim y HTTPS moderno (TLS 1.3 con wolfSSL). Muestra paginas simples:
+Wikipedia, noticias, foros, buscadores livianos. No anda con YouTube, Facebook,
+Instagram ni Google (necesitan JavaScript y mucha mas memoria).
+
+Como instalarlo
+---------------
+1. Copia la carpeta APPS/EONNAV entera al pendrive (o a la SD del MX4SIO),
+   quedando asi:  APPS/EONNAV/EONNAV.ELF  y  APPS/EONNAV/title.cfg
+2. Conecta la PS2 slim al router con un cable de red.
+3. Abri EonPS2, anda a la pestana de Aplicaciones y elegi "EonNav".
+   (Tambien se puede abrir EONNAV.ELF desde wLaunchELF.)
+
+Al arrancar tarda unos segundos: esta pidiendole una direccion al router.
+La pagina de inicio dice si la red esta conectada.
+
+Controles
+---------
+  Palanca izquierda ... mover el puntero
+  Palanca derecha ..... subir / bajar la pagina
+  X ................... clic
+  Circulo ............. volver atras
+  Triangulo ........... escribir una direccion (hace falta teclado USB)
+  Cuadrado ............ menu
+  Cruz direccional .... pasar de un enlace a otro
+  L1 / R1 ............. pagina anterior / siguiente
+  START ............... aceptar (Enter)
+
+Estado
+------
+Prototipo: compilado y probado en PC (misma version del programa, sin consola).
+Falta probarlo en PCSX2 y en una PS2 real. Si algo falla, anota que estabas
+haciendo y que aparecio en pantalla.
+
+Licencia
+--------
+EonNav esta basado en Links (c) Mikulas Patocka y colaboradores, licencia GPL
+version 2 o posterior (ver COPYING). El codigo fuente de EonNav esta en
+https://github.com/juanklimonplay/EonPS2 (carpeta apps/eonnav).
